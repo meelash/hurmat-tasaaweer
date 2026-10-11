@@ -7,5 +7,5 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with: {python-version: "3.12"}
-      - run: pip install mss numpy
+      - run: pip install mss numpy pillow
       - run: python tools/win_affinity_probe.py
