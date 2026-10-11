@@ -1,0 +1,169 @@
+name: Build
+
+# Every push to main builds all downloads and self-tests them on real
+# Windows, macOS and Linux machines. Pushing a tag like v0.1.0 also
+# publishes them as a (pre-)release.
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  models:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/cache@v4
+        id: cache
+        with:
+          path: models
+          key: models-${{ hashFiles('packaging/requirements-models.txt', 'tools/export_models.sh') }}
+      - uses: actions/setup-python@v5
+        if: steps.cache.outputs.cache-hit != 'true'
+        with:
+          python-version: "3.12"
+      - name: Export models to ncnn
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
+          pip install -r packaging/requirements-models.txt
+          mkdir -p models && cd models
+          for m in yolo11s-seg yolo11s-pose; do yolo export model=$m.pt format=ncnn; done
+          rm -f *.pt */model_ncnn.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: models
+          path: models
+
+  desktop:
+    needs: models
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-2022
+            target: windows-x64
+          - os: macos-14
+            target: macos-arm64
+          - os: ubuntu-22.04
+            target: linux-x11-x64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: models
+          path: models
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install
+        run: pip install -r requirements-desktop.txt pyinstaller
+      - name: Build
+        run: pyinstaller --noconfirm packaging/hurmat-tasaaweer.spec
+
+      # The self-test checks detection, screen capture, and that our blur
+      # windows are left out of our own captures. It doesn't fail the build:
+      # CI machines are unusual desktops, and the report is what matters.
+      - name: Self-test (Windows)
+        if: runner.os == 'Windows'
+        continue-on-error: true
+        shell: pwsh
+        run: |
+          dist\HurmatTasaaweer\HurmatTasaaweer.exe --self-test --log-file selftest.log | Tee-Object selftest-${{ matrix.target }}.json
+      - name: Self-test (macOS)
+        if: runner.os == 'macOS'
+        continue-on-error: true
+        run: |
+          dist/HurmatTasaaweer.app/Contents/MacOS/HurmatTasaaweer --self-test --log-file selftest.log | tee selftest-${{ matrix.target }}.json
+      - name: Self-test (Linux, X11)
+        if: runner.os == 'Linux'
+        continue-on-error: true
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq xvfb x11-apps libxcb1
+          xvfb-run -a -s "-screen 0 1920x1080x24" bash -c '
+            xeyes -geometry 600x400+100+100 & sleep 2
+            dist/HurmatTasaaweer/HurmatTasaaweer --self-test --log-file selftest.log' | tee selftest-${{ matrix.target }}.json
+      - name: Self-test summary
+        if: always()
+        shell: bash
+        run: |
+          { echo "### Self-test: ${{ matrix.target }}"; echo '```json'; cat selftest-${{ matrix.target }}.json 2>/dev/null || echo "no report"; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Package (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: Compress-Archive -Path dist\HurmatTasaaweer -DestinationPath HurmatTasaaweer-${{ matrix.target }}.zip
+      - name: Package (macOS)
+        if: runner.os == 'macOS'
+        run: ditto -c -k --keepParent dist/HurmatTasaaweer.app HurmatTasaaweer-${{ matrix.target }}.zip
+      - name: Package (Linux)
+        if: runner.os == 'Linux'
+        run: tar czf HurmatTasaaweer-${{ matrix.target }}.tar.gz -C dist HurmatTasaaweer
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.target }}
+          path: |
+            HurmatTasaaweer-${{ matrix.target }}.*
+            selftest-${{ matrix.target }}.json
+
+  gnome:
+    needs: models
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: models
+          path: models
+      - name: Package
+        run: |
+          dir=HurmatTasaaweer-gnome
+          mkdir -p $dir
+          cp -r hurmat models extension LICENSE NOTICE.md README.md $dir/
+          cp packaging/gnome/* $dir/
+          find $dir -name __pycache__ -prune -exec rm -rf {} +
+          tar czf HurmatTasaaweer-linux-gnome.tar.gz $dir
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux-gnome
+          path: HurmatTasaaweer-linux-gnome.tar.gz
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [desktop, gnome]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+      - name: Publish pre-release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          {
+            cat packaging/release-notes.md
+            echo
+            echo "## Automatic self-test results"
+            echo
+            echo "These ran on GitHub's build machines, not real desktops. They check that the models"
+            echo "load and find people, that the screen can be captured, and that the blur windows are"
+            echo "left out of the program's own captures."
+            for f in artifacts/selftest-*.json; do
+              t=${f#artifacts/selftest-}; t=${t%.json}
+              echo; echo "<details><summary>$t: $(python3 -c "import json,sys; print('passed' if json.load(open(sys.argv[1])).get('ok') else 'see details')" "$f" 2>/dev/null || echo 'no report')</summary>"
+              echo; echo '```json'; cat "$f"; echo '```'; echo "</details>"
+            done
+          } > notes.md
+          gh release create "$GITHUB_REF_NAME" --prerelease --title "$GITHUB_REF_NAME (untested pre-release)" \
+            --notes-file notes.md artifacts/HurmatTasaaweer-*

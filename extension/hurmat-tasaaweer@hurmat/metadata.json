@@ -1,0 +1,13 @@
+{
+  "uuid": "hurmat-tasaaweer@hurmat",
+  "name": "Hurmat Tasaaweer",
+  "description": "Blurs images of living beings in every window, driven by the hurmatd detector. Tested on GNOME 50 only.",
+  "shell-version": [
+    "46",
+    "47",
+    "48",
+    "49",
+    "50"
+  ],
+  "url": "https://github.com/meelash/hurmat-tasaaweer"
+}

@@ -1,0 +1,66 @@
+name: Test report
+description: Tried Hurmat Tasaaweer? Tell us how it went, good or bad.
+title: "Test report: [platform]"
+labels: ["test report"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for testing. Reports that it **works** are just as useful as reports that it doesn't.
+        Please don't attach screenshots that show unblurred images of people.
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Which version?
+      options:
+        - Windows
+        - macOS
+        - Linux X11
+        - Linux GNOME
+    validations:
+      required: true
+  - type: input
+    id: system
+    attributes:
+      label: System
+      description: OS version, and the desktop on Linux (e.g. "Windows 11 23H2", "macOS 15.1, M2", "Linux Mint 22 Cinnamon")
+    validations:
+      required: true
+  - type: input
+    id: hardware
+    attributes:
+      label: Graphics card / computer
+      description: e.g. "Intel UHD 620 laptop", "NVIDIA RTX 3060", "MacBook Air M1"
+  - type: dropdown
+    id: result
+    attributes:
+      label: Overall
+      options:
+        - Works well
+        - Works, with problems (described below)
+        - Starts but doesn't blur anything
+        - Doesn't start
+    validations:
+      required: true
+  - type: textarea
+    id: selftest
+    attributes:
+      label: Self-test output
+      description: |
+        Windows: open a Command Prompt in the unzipped folder and run `HurmatTasaaweer.exe --self-test`.
+        macOS: in Terminal, `/path/to/HurmatTasaaweer.app/Contents/MacOS/HurmatTasaaweer --self-test`.
+        Linux X11: `./HurmatTasaaweer --self-test`. (Not available for the GNOME version.)
+      render: json
+  - type: textarea
+    id: details
+    attributes:
+      label: What happened?
+      description: What worked, what didn't, anything slow or flickering, false or missed blurs. Describe images rather than attaching them.
+  - type: textarea
+    id: log
+    attributes:
+      label: Log (optional)
+      description: |
+        Windows: `%LOCALAPPDATA%\HurmatTasaaweer\hurmat-tasaaweer.log` · macOS: `~/Library/Logs/hurmat-tasaaweer.log`
+        Linux X11: `~/.local/state/hurmat-tasaaweer/hurmat-tasaaweer.log` · GNOME: `journalctl --user -u hurmatd --since today`
+      render: text

@@ -1,0 +1,6 @@
+# Also needs system packages: python3-gobject, gstreamer1-plugins-base,
+# gstreamer1-plugins-good, pipewire-gstreamer (create the venv with
+# --system-site-packages so the GObject bindings are visible).
+ncnn
+numpy
+pillow

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Hurmat Tasaaweer</string>
+    <string name="service_name">Hurmat Tasaaweer (probe)</string>
+    <string name="service_description">Experimental: measures window screenshots and overlays, to blur images of living beings. Results go to the system log (tag Hurmat).</string>
+    <string name="hurmat_description">Blurs images of people and animals in the app you are using. Screenshots are checked on the phone and never stored or sent anywhere.</string>
+</resources>

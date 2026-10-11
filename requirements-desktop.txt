@@ -1,0 +1,8 @@
+# Windows, macOS and X11 desktop version (python -m hurmat.desktop).
+ncnn==1.0.20260526
+numpy>=2.0
+pillow>=11
+mss>=10
+python-xlib>=0.33; sys_platform == "linux"
+pyobjc-framework-Quartz>=11; sys_platform == "darwin"
+pyobjc-framework-Cocoa>=11; sys_platform == "darwin"

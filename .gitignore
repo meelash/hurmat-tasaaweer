@@ -1,0 +1,8 @@
+.venv/
+.venv-export/
+models/
+__pycache__/
+.venv-pkg/
+build/
+dist/
+*.pyc

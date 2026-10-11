@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hurmat Tasaaweer</title>
+<meta name="description" content="Blurs pictures of people and animals everywhere on your screen, on your own computer.">
+<style>
+  :root {
+    --bg: #f7f6f2; --fg: #1d2420; --muted: #5b6660; --card: #ffffff; --line: #e2e0d8;
+    --accent: #1f6b4f; --accent-fg: #ffffff; --warn-bg: #fff4d6; --warn-line: #e8c463; --warn-fg: #5a4300;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #141816; --fg: #e8ece9; --muted: #a2ada7; --card: #1c2220; --line: #2c3430;
+      --accent: #5cc496; --accent-fg: #0f1a15; --warn-bg: #2e2810; --warn-line: #7a6420; --warn-fg: #f2dc9a;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--fg);
+         font: 17px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 860px; margin: 0 auto; padding: 48px 16px 64px; }
+  h1 { font-size: 2.3rem; line-height: 1.15; margin: 0 0 8px; letter-spacing: -0.01em; }
+  h1 .ar { display: block; font-size: 1.5rem; color: var(--muted); font-weight: 500; margin-top: 6px; }
+  h2 { font-size: 1.3rem; margin: 48px 0 12px; }
+  p.lead { font-size: 1.15rem; color: var(--muted); margin: 12px 0 24px; max-width: 640px; }
+  a { color: var(--accent); }
+  .warn { background: var(--warn-bg); border: 1px solid var(--warn-line); color: var(--warn-fg);
+          border-radius: 10px; padding: 14px 18px; margin: 24px 0; }
+  .warn strong { display: block; margin-bottom: 4px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px;
+          display: flex; flex-direction: column; gap: 6px; }
+  .card.mine { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+  .card h3 { margin: 0; font-size: 1.05rem; }
+  .card .status { font-size: 0.85rem; color: var(--muted); }
+  .card .req { font-size: 0.9rem; color: var(--muted); flex: 1; }
+  .btn { display: inline-block; text-align: center; background: var(--accent); color: var(--accent-fg);
+         text-decoration: none; border-radius: 8px; padding: 9px 14px; font-weight: 600; margin-top: 6px; }
+  .btn.secondary { background: transparent; color: var(--accent); border: 1px solid var(--accent); }
+  ul { padding-left: 1.2em; }
+  li { margin: 4px 0; }
+  code { background: var(--card); border: 1px solid var(--line); border-radius: 5px; padding: 1px 5px; font-size: 0.92em; }
+  footer { margin-top: 56px; color: var(--muted); font-size: 0.9rem; border-top: 1px solid var(--line); padding-top: 16px; }
+  #release { font-size: 0.9rem; color: var(--muted); margin-top: 8px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Hurmat Tasaaweer <span class="ar" lang="ar" dir="rtl">حرمة التصاوير</span></h1>
+  <p class="lead">Blurs pictures of people and animals everywhere on your screen, in every app,
+    to help guard the gaze. Text and buttons around them stay readable, and very small images
+    are left alone. It runs entirely on your own computer; nothing is sent anywhere.</p>
+
+  <div class="warn" role="note">
+    <strong>Early, untested software.</strong>
+    Only the GNOME version has been used day to day. The Windows, macOS and X11 versions have
+    passed automatic checks on build machines but have not been tried by a person, and may not
+    work at all. If you try one, please
+    <a href="https://github.com/meelash/hurmat-tasaaweer/issues/new?template=test-report.yml">send a test report</a>,
+    whether it worked or not. The author will work with willing testers to fix what they find.
+  </div>
+
+  <h2>Download</h2>
+  <div class="grid">
+    <div class="card" data-os="windows">
+      <h3>Windows</h3>
+      <div class="status">Untested</div>
+      <div class="req">Windows 10 (version 2004 or later) or 11, 64-bit.</div>
+      <a class="btn" data-asset="HurmatTasaaweer-windows-x64.zip" href="https://github.com/meelash/hurmat-tasaaweer/releases">Download</a>
+    </div>
+    <div class="card" data-os="mac">
+      <h3>macOS</h3>
+      <div class="status">Untested</div>
+      <div class="req">macOS 12 or later on Apple Silicon (M1 and newer). Needs the Screen Recording permission.</div>
+      <a class="btn" data-asset="HurmatTasaaweer-macos-arm64.zip" href="https://github.com/meelash/hurmat-tasaaweer/releases">Download</a>
+    </div>
+    <div class="card" data-os="linux">
+      <h3>Linux, GNOME</h3>
+      <div class="status">Used daily on GNOME 50</div>
+      <div class="req">GNOME on Wayland (Fedora, Ubuntu and others). Blurs inside the desktop itself.</div>
+      <a class="btn" data-asset="HurmatTasaaweer-linux-gnome.tar.gz" href="https://github.com/meelash/hurmat-tasaaweer/releases">Download</a>
+    </div>
+    <div class="card" data-os="linux">
+      <h3>Linux, X11</h3>
+      <div class="status">Lightly tested</div>
+      <div class="req">XFCE, Cinnamon, MATE, i3, KDE on X11 and other X11 desktops.</div>
+      <a class="btn" data-asset="HurmatTasaaweer-linux-x11-x64.tar.gz" href="https://github.com/meelash/hurmat-tasaaweer/releases">Download</a>
+    </div>
+  </div>
+  <div id="release"></div>
+  <p>Installation steps for each are in the
+    <a href="https://github.com/meelash/hurmat-tasaaweer#install">README</a>. The downloads aren't signed,
+    so Windows and macOS show a warning the first time; the README explains how to get past it.
+    Android is in development. iPhones can't support this: iOS doesn't let apps see or cover other apps.</p>
+
+  <h2>How it works</h2>
+  <ul>
+    <li>A detection model looks at what's on screen and outlines each person and animal.
+      It runs on your graphics card where possible.</li>
+    <li>A person is blurred when a head or most of a body is visible; a hand or legs alone are
+      left alone. A faces-only mode is available.</li>
+    <li>The blur follows each figure's outline, so nearby text and buttons stay sharp.
+      Pictures smaller than about 48 pixels are left alone.</li>
+    <li>Blurring appears within about 0.1–0.2 seconds of a new picture on GNOME;
+      the other versions are slower.</li>
+  </ul>
+
+  <h2>Help test it</h2>
+  <p>Testers are needed most on <strong>Windows</strong>, <strong>macOS</strong> and <strong>X11</strong> desktops.
+    Install it, use your computer normally for a while, then
+    <a href="https://github.com/meelash/hurmat-tasaaweer/issues/new?template=test-report.yml">fill in a test report</a>.
+    The Windows, macOS and X11 versions have a built-in self-test (<code>--self-test</code>) whose output helps a lot.
+    Please describe problem images in words rather than attaching screenshots of them.</p>
+  <a class="btn secondary" href="https://github.com/meelash/hurmat-tasaaweer/issues/new?template=test-report.yml">Send a test report</a>
+
+  <footer>
+    Free and open source under the AGPL-3.0 ·
+    <a href="https://github.com/meelash/hurmat-tasaaweer">Source code</a> ·
+    Detection models by <a href="https://github.com/ultralytics/ultralytics">Ultralytics</a> (AGPL-3.0)
+  </footer>
+</main>
+<script>
+  // Highlight the visitor's platform.
+  const ua = navigator.userAgent;
+  const os = /Windows/.test(ua) ? "windows" : /Mac OS X|Macintosh/.test(ua) && !/iPhone|iPad/.test(ua) ? "mac"
+           : /Linux/.test(ua) && !/Android/.test(ua) ? "linux" : null;
+  if (os) document.querySelectorAll(`.card[data-os="${os}"]`).forEach(c => c.classList.add("mine"));
+
+  // Point the buttons at the newest release's files (pre-releases included,
+  // which GitHub's "latest" links skip). Without it they open the releases page.
+  fetch("https://api.github.com/repos/meelash/hurmat-tasaaweer/releases?per_page=1")
+    .then(r => r.ok ? r.json() : [])
+    .then(([rel]) => {
+      if (!rel) return;
+      const assets = Object.fromEntries(rel.assets.map(a => [a.name, a.browser_download_url]));
+      document.querySelectorAll("[data-asset]").forEach(a => {
+        if (assets[a.dataset.asset]) a.href = assets[a.dataset.asset];
+      });
+      const el = document.getElementById("release");
+      el.textContent = `Latest: ${rel.name || rel.tag_name}, ${new Date(rel.published_at).toLocaleDateString()}. `;
+      const link = document.createElement("a");
+      link.href = rel.html_url; link.textContent = "Release notes and self-test results";
+      el.append(link);
+    })
+    .catch(() => {});
+</script>
+</body>
+</html>
