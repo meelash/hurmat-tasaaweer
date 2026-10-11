@@ -42,23 +42,73 @@ def make_backend():
     return X11Backend()
 
 
+def gpu_works():
+    """Run the models on the GPU in a separate process first: a broken GPU
+    driver can crash the process outright (seen with virtual GPUs on macOS),
+    and then we'd rather fall back to the CPU than not run at all."""
+    import subprocess
+    cmd = [sys.executable, "--probe-gpu"] if getattr(sys, "frozen", False) else \
+          [sys.executable, "-m", "hurmat.desktop", "--probe-gpu"]
+    try:
+        r = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
+    except subprocess.TimeoutExpired:
+        return "timed out"
+    if r.returncode == 0 and "GPU-OK" in r.stdout:
+        return "ok"
+    if r.returncode == 3:
+        return "no GPU found"
+    return f"probe exited with {r.returncode}"
+
+
+def probe_gpu(eng, args):
+    import ncnn
+    if ncnn.get_gpu_count() == 0:
+        return 3
+    engine = eng.load_engine(args)
+    if not engine.detector.on_gpu:
+        return 3
+    from ..frames import ArrayFrame
+    from ..paths import assets_dir
+    import numpy as np
+    from PIL import Image
+    img = np.asarray(Image.open(assets_dir() / "test-people.jpg").convert("RGB"))
+    h, w = img.shape[:2]
+    bgra = np.dstack([img[..., 2], img[..., 1], img[..., 0], np.full((h, w), 255, np.uint8)])
+    dets, _ = engine.detect(ArrayFrame(bgra.tobytes(), w, h), (0, 0, w, h))
+    if sum(d.label == "person" for d in dets) < 3:
+        return 4  # runs, but gives wrong answers
+    print("GPU-OK", flush=True)
+    return 0
+
+
 def main():
     from .. import engine as eng  # imports ncnn; after the OMP setting in hurmat/__init__
     p = argparse.ArgumentParser(prog="hurmat-tasaaweer", description=__doc__,
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
     eng.add_engine_args(p, max_fps=10)
     p.add_argument("--self-test", action="store_true", help="check detection and capture, print a report, exit")
+    p.add_argument("--report", default=None, help="with --self-test: also write the report to this file")
+    p.add_argument("--probe-gpu", action="store_true", help=argparse.SUPPRESS)
     p.add_argument("--log-file", default=None, help="also log here (default: a per-user log file)")
     args = p.parse_args()
     log_file = args.log_file or default_log_file()
     eng.setup_logging(args, log_file)
     log.info("Hurmat Tasaaweer starting on %s; log file %s", sys.platform, log_file)
 
+    if args.probe_gpu:
+        sys.exit(probe_gpu(eng, args))
+    gpu_note = None
+    if not args.cpu:
+        gpu_note = gpu_works()
+        if gpu_note != "ok":
+            log.warning("GPU detection doesn't work here (%s); using the CPU instead", gpu_note)
+            args.cpu = True
+
     backend = make_backend()
     engine = eng.load_engine(args)
     if args.self_test:
         from .selftest import run
-        sys.exit(run(backend, engine))
+        sys.exit(run(backend, engine, extra={"gpu_probe": gpu_note or "skipped (--cpu)"}, report_path=args.report))
 
     from .base import DesktopApp
     app = DesktopApp(backend, engine, args)

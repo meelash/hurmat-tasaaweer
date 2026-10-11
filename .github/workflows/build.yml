@@ -76,12 +76,12 @@ jobs:
         continue-on-error: true
         shell: pwsh
         run: |
-          dist\HurmatTasaaweer\HurmatTasaaweer.exe --self-test --log-file selftest.log | Tee-Object selftest-${{ matrix.target }}.json
+          dist\HurmatTasaaweer\HurmatTasaaweer.exe --self-test --log-file selftest.log --report selftest-${{ matrix.target }}.json
       - name: Self-test (macOS)
         if: runner.os == 'macOS'
         continue-on-error: true
         run: |
-          dist/HurmatTasaaweer.app/Contents/MacOS/HurmatTasaaweer --self-test --log-file selftest.log | tee selftest-${{ matrix.target }}.json
+          dist/HurmatTasaaweer.app/Contents/MacOS/HurmatTasaaweer --self-test --log-file selftest.log --report selftest-${{ matrix.target }}.json
       - name: Self-test (Linux, X11)
         if: runner.os == 'Linux'
         continue-on-error: true
@@ -89,12 +89,13 @@ jobs:
           sudo apt-get update -qq && sudo apt-get install -y -qq xvfb x11-apps libxcb1
           xvfb-run -a -s "-screen 0 1920x1080x24" bash -c '
             xeyes -geometry 600x400+100+100 & sleep 2
-            dist/HurmatTasaaweer/HurmatTasaaweer --self-test --log-file selftest.log' | tee selftest-${{ matrix.target }}.json
+            dist/HurmatTasaaweer/HurmatTasaaweer --self-test --log-file selftest.log --report selftest-${{ matrix.target }}.json'
       - name: Self-test summary
         if: always()
         shell: bash
         run: |
-          { echo "### Self-test: ${{ matrix.target }}"; echo '```json'; cat selftest-${{ matrix.target }}.json 2>/dev/null || echo "no report"; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+          { echo "### Self-test: ${{ matrix.target }}"; echo '```json'; cat selftest-${{ matrix.target }}.json 2>/dev/null || echo "no report"; echo '```';
+            echo "<details><summary>log</summary>"; echo; echo '```'; tail -40 selftest.log 2>/dev/null; echo '```'; echo "</details>"; } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Package (Windows)
         if: runner.os == 'Windows'
@@ -112,6 +113,7 @@ jobs:
           path: |
             HurmatTasaaweer-${{ matrix.target }}.*
             selftest-${{ matrix.target }}.json
+            selftest.log
 
   gnome:
     needs: models

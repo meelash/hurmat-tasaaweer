@@ -25,7 +25,7 @@ log = logging.getLogger("hurmat")
 MARK = (255, 0, 255)  # magenta test patch
 
 
-def run(backend, engine, extra=None):
+def run(backend, engine, extra=None, report_path=None):
     report = {
         "platform": platform.platform(),
         "python": sys.version.split()[0],
@@ -80,8 +80,14 @@ def run(backend, engine, extra=None):
     finally:
         backend.close()
 
+    if getattr(backend, "capture_exclusion", None):
+        report.setdefault("exclusion", {})["set_window_display_affinity"] = backend.capture_exclusion
     report["ok"] = bool(ok)
-    print(json.dumps(report, indent=2))
+    text = json.dumps(report, indent=2)
+    print(text)
+    if report_path:
+        with open(report_path, "w", encoding="utf-8") as f:
+            f.write(text + "\n")
     return 0 if ok else 1
 
 

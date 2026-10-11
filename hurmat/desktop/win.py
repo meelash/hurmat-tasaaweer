@@ -116,6 +116,7 @@ class WindowsBackend(Backend):
             raise ctypes.WinError(ctypes.get_last_error())
         self.windows = {}  # (source key, patch id) → hwnd
         self.warned_affinity = False
+        self.capture_exclusion = None  # reported by the self-test
         self.last_topmost = 0.0
 
     def sources(self):
@@ -143,13 +144,26 @@ class WindowsBackend(Backend):
                 if not hwnd:
                     log.warning("CreateWindowEx failed: %s", ctypes.WinError(ctypes.get_last_error()))
                     continue
-                if not user32.SetWindowDisplayAffinity(hwnd, WDA_EXCLUDEFROMCAPTURE) and not self.warned_affinity:
-                    self.warned_affinity = True
-                    log.warning("could not exclude blur windows from screen capture (needs Windows 10 2004+); "
-                                "blur will flicker: %s", ctypes.WinError(ctypes.get_last_error()))
                 self.windows[(key, pid)] = hwnd
-            self._paint(hwnd, info.x + p.x, info.y + p.y, p.rgba)
-            user32.ShowWindow(hwnd, SW_SHOWNOACTIVATE)
+                self._paint(hwnd, info.x + p.x, info.y + p.y, p.rgba)
+                user32.ShowWindow(hwnd, SW_SHOWNOACTIVATE)
+                # Only once the window has content and is shown: before that
+                # the call can fail (ERROR_NOT_ENOUGH_MEMORY).
+                self._exclude_from_capture(hwnd)
+            else:
+                self._paint(hwnd, info.x + p.x, info.y + p.y, p.rgba)
+
+    def _exclude_from_capture(self, hwnd):
+        ok = bool(user32.SetWindowDisplayAffinity(hwnd, WDA_EXCLUDEFROMCAPTURE))
+        if not ok:
+            err = ctypes.WinError(ctypes.get_last_error())
+            self.capture_exclusion = f"failed: {err}"
+            if not self.warned_affinity:
+                self.warned_affinity = True
+                log.warning("could not exclude blur windows from screen capture (needs Windows 10 2004+ "
+                            "and desktop composition); blur will flicker: %s", err)
+        elif self.capture_exclusion is None:
+            self.capture_exclusion = "ok"
 
     def _paint(self, hwnd, x, y, rgba):
         h, w = rgba.shape[:2]
