@@ -13,7 +13,6 @@ import platform
 import sys
 import time
 
-import ncnn
 import numpy as np
 from PIL import Image
 
@@ -30,8 +29,9 @@ def run(backend, engine, extra=None, report_path=None):
         "platform": platform.platform(),
         "python": sys.version.split()[0],
         "backend": backend.name,
+        # (Not ncnn.get_gpu_count(): on a broken GPU driver that alone can
+        # crash the process. The GPU probe in a child process covers it.)
         "gpu": engine.detector.on_gpu,
-        "gpu_count": ncnn.get_gpu_count(),
         **(extra or {}),
     }
     ok = True
