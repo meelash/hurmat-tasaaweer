@@ -3,7 +3,8 @@
 Each monitor is captured whole (GDI, via mss). Patches are small layered,
 click-through, always-on-top windows marked WDA_EXCLUDEFROMCAPTURE, so
 Windows leaves them out of every screen capture, ours included, and the
-detector never sees its own blur.
+detector never sees its own blur. (The mark has to be set before a window
+becomes layered; see show().)
 """
 
 import ctypes
@@ -89,6 +90,9 @@ _sig(gdi32.CreateDIBSection, wt.HBITMAP, wt.HDC, ctypes.POINTER(BITMAPINFOHEADER
 _sig(gdi32.SelectObject, wt.HGDIOBJ, wt.HDC, wt.HGDIOBJ)
 _sig(gdi32.DeleteObject, wt.BOOL, wt.HGDIOBJ)
 _sig(kernel32.GetModuleHandleW, wt.HMODULE, wt.LPCWSTR)
+_sig(user32.GetWindowLongPtrW, ctypes.c_ssize_t, wt.HWND, ctypes.c_int)
+_sig(user32.SetWindowLongPtrW, ctypes.c_ssize_t, wt.HWND, ctypes.c_int, ctypes.c_ssize_t)
+GWL_EXSTYLE = -20
 
 
 @WNDPROC
@@ -138,18 +142,23 @@ class WindowsBackend(Backend):
         for pid, p in patches.items():
             hwnd = self.windows.get((key, pid))
             if hwnd is None:
+                # SetWindowDisplayAffinity refuses layered windows
+                # (ERROR_NOT_ENOUGH_MEMORY), but a window that already has it
+                # keeps it after becoming layered. So: create a plain window,
+                # exclude it from capture, then make it layered and
+                # click-through.
                 hwnd = user32.CreateWindowExW(
-                    WS_EX_LAYERED | WS_EX_TRANSPARENT | WS_EX_TOPMOST | WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE,
+                    WS_EX_TOPMOST | WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE,
                     self.cls, "Hurmat Tasaaweer", WS_POPUP, 0, 0, 1, 1, None, None, self.hinst, None)
                 if not hwnd:
                     log.warning("CreateWindowEx failed: %s", ctypes.WinError(ctypes.get_last_error()))
                     continue
+                self._exclude_from_capture(hwnd)
+                ex = user32.GetWindowLongPtrW(hwnd, GWL_EXSTYLE)
+                user32.SetWindowLongPtrW(hwnd, GWL_EXSTYLE, ex | WS_EX_LAYERED | WS_EX_TRANSPARENT)
                 self.windows[(key, pid)] = hwnd
                 self._paint(hwnd, info.x + p.x, info.y + p.y, p.rgba)
                 user32.ShowWindow(hwnd, SW_SHOWNOACTIVATE)
-                # Only once the window has content and is shown: before that
-                # the call can fail (ERROR_NOT_ENOUGH_MEMORY).
-                self._exclude_from_capture(hwnd)
             else:
                 self._paint(hwnd, info.x + p.x, info.y + p.y, p.rgba)
 
