@@ -8,13 +8,13 @@ included. Needs the Screen Recording permission (System Settings → Privacy
 """
 
 import logging
+import signal
 import time
 
 import AppKit
 import objc
 import Quartz
 from Foundation import NSObject
-from PyObjCTools import AppHelper
 
 from ..frames import ArrayFrame
 from .base import Backend, SourceInfo
@@ -37,7 +37,7 @@ class _Ticker(NSObject):
     def tick_(self, _timer):
         try:
             if self.cb() is False:
-                AppHelper.stopEventLoop()
+                _stop_app()
         except Exception:  # noqa: BLE001 - keep the event loop alive, log instead
             log.exception("tick failed")
 
@@ -160,10 +160,27 @@ class MacBackend(Backend):
         self._ticker = _Ticker.alloc().initWithCallback_(tick)
         timer = AppKit.NSTimer.scheduledTimerWithTimeInterval_target_selector_userInfo_repeats_(
             interval_s, self._ticker, "tick:", None, True)
+        # Ctrl+C in a terminal: a Python handler runs at the next tick (the
+        # timer keeps Python code running), and stops the loop cleanly.
+        old = signal.signal(signal.SIGINT, lambda *_: _stop_app())
         try:
-            AppHelper.runEventLoop(installInterrupt=True)
+            # Not AppHelper.runEventLoop/stopEventLoop: stopEventLoop
+            # *terminates* the app, so nothing after it (the self-test report,
+            # removing our windows) would run.
+            self.app.run()
         finally:
+            signal.signal(signal.SIGINT, old)
             timer.invalidate()
+
+
+def _stop_app():
+    """Make NSApplication.run() return. stop: only takes effect after the
+    next event, so post a harmless one."""
+    app = AppKit.NSApplication.sharedApplication()
+    app.stop_(None)
+    event = AppKit.NSEvent.otherEventWithType_location_modifierFlags_timestamp_windowNumber_context_subtype_data1_data2_(
+        AppKit.NSEventTypeApplicationDefined, AppKit.NSMakePoint(0, 0), 0, 0, 0, None, 0, 0, 0)
+    app.postEvent_atStart_(event, True)
 
 
 def _cgimage(rgba):

@@ -17,7 +17,7 @@ hidden = ["hurmat.desktop.selftest", "hurmat.desktop.base"]
 if sys.platform == "win32":
     hidden += ["hurmat.desktop.win"]
 elif sys.platform == "darwin":
-    hidden += ["hurmat.desktop.mac", "AppKit", "Quartz", "Foundation", "PyObjCTools.AppHelper"]
+    hidden += ["hurmat.desktop.mac", "AppKit", "Quartz", "Foundation"]
 else:
     hidden += ["hurmat.desktop.x11", "Xlib.ext.composite", "Xlib.ext.shape"]
 
