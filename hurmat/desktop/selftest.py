@@ -37,6 +37,7 @@ def run(backend, engine, extra=None, report_path=None):
     ok = True
 
     # 1. detection
+    log.info("self-test: detection")
     try:
         img = np.asarray(Image.open(assets_dir() / "test-people.jpg").convert("RGB"))
         h, w = img.shape[:2]
@@ -57,6 +58,7 @@ def run(backend, engine, extra=None, report_path=None):
 
     # 2. capture + 3. exclusion
     try:
+        log.info("self-test: capture")
         sources = backend.sources()
         report["sources"] = len(sources)
         if not sources:
@@ -71,6 +73,7 @@ def run(backend, engine, extra=None, report_path=None):
                 "ms": round((time.perf_counter() - t) * 1e3),
             }
             if frame is not None:
+                log.info("self-test: exclusion")
                 report["exclusion"] = _exclusion(backend, key, info)
                 ok &= report["exclusion"].get("ok", True) is not False
         ok &= report["capture"]["ok"]

@@ -93,6 +93,10 @@ def main():
     args = p.parse_args()
     log_file = args.log_file or default_log_file()
     eng.setup_logging(args, log_file)
+    # If native code (GPU driver, ncnn, the OS) crashes the process, still
+    # leave a trace of where, in the log, for bug reports.
+    import faulthandler
+    faulthandler.enable(open(log_file, "a", encoding="utf-8"), all_threads=True)
     log.info("Hurmat Tasaaweer starting on %s; log file %s", sys.platform, log_file)
 
     if args.probe_gpu:

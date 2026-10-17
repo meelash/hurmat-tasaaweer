@@ -81,7 +81,7 @@ jobs:
         if: runner.os == 'macOS'
         continue-on-error: true
         run: |
-          dist/HurmatTasaaweer.app/Contents/MacOS/HurmatTasaaweer --self-test --log-file selftest.log --report selftest-${{ matrix.target }}.json
+          dist/HurmatTasaaweer.app/Contents/MacOS/HurmatTasaaweer --self-test --log-file selftest.log --report selftest-${{ matrix.target }}.json || echo "exit code $?" | tee -a selftest.log
       - name: Self-test (Linux, X11)
         if: runner.os == 'Linux'
         continue-on-error: true
