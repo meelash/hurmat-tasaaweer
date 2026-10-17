@@ -23,7 +23,7 @@ fi
 echo "Installing to $DEST"
 mkdir -p "$DEST"
 rm -rf "$DEST/hurmat" "$DEST/models"
-cp -r "$HERE/hurmat" "$HERE/models" "$HERE/LICENSE" "$HERE/NOTICE.md" "$DEST/"
+cp -r "$HERE/hurmat" "$HERE/models" "$HERE/LICENSE" "$HERE/NOTICE.md" "$HERE/uninstall.sh" "$DEST/"
 if [ ! -x "$DEST/venv/bin/python" ]; then
     python3 -m venv --system-site-packages "$DEST/venv"
 fi
@@ -50,4 +50,4 @@ else
     echo "then run:  gnome-extensions enable $UUID"
     echo "The detector service starts by itself at login."
 fi
-echo "Logs: journalctl --user -u hurmatd -f      Uninstall: $HERE/uninstall.sh"
+echo "Logs: journalctl --user -u hurmatd -f      Uninstall: $DEST/uninstall.sh"
